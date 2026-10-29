@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0e0e0c;
+  --color-ink-raised: #171714;
+  --color-paper: #f3efe6;
+  --color-paper-dim: #e4ddd0;
+  --color-fg: #f4f1ea;
+  --color-muted: #9a958a;
+  --color-line: #2c2c28;
+  --color-signal: #e2ff4d;
+  --color-signal-ink: #14180a;
+
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+
+  --text-display: clamp(3.15rem, 7.5vw, 7.15rem);
+  --text-display--line-height: 0.9;
+  --text-display--letter-spacing: -0.045em;
+  --text-display--font-weight: 500;
+
+  --text-title: clamp(2.4rem, 5vw, 4.4rem);
+  --text-title--line-height: 0.96;
+  --text-title--letter-spacing: -0.035em;
+  --text-title--font-weight: 500;
+
+  --tracking-label: 0.16em;
+
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-signal-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+  }
+
+  body {
+    background: var(--color-ink);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-weight: 400;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer components {
+  .rise {
+    animation: rise 780ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  .ticker {
+    overflow: hidden;
+  }
+
+  .ticker-track {
+    animation: ticker 46s linear infinite;
+  }
+
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
+
+  .live-dot {
+    animation: pulse 2.6s ease-in-out infinite;
+  }
+
+  .fold {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 420ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .fold.open {
+    grid-template-rows: 1fr;
+  }
+
+  .field-frame {
+    height: 16.5rem;
+  }
+
+  .paper {
+    color-scheme: light;
+  }
+
+  .spot {
+    background-image: radial-gradient(
+      520px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in oklab, var(--color-signal) 14%, transparent),
+      transparent 42%
+    );
+  }
+
+  .display {
+    font-family: var(--font-display);
+    font-size: clamp(3.15rem, 7.5vw, 7.15rem);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 0.9;
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: clamp(2.35rem, 4.6vw, 4.25rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 0.96;
+  }
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+}
+
+@media (min-width: 1024px) {
+  .field-frame {
+    height: 34rem;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .ticker-track,
+  .live-dot {
+    animation: none;
+  }
+
+  .fold {
+    transition: none;
+  }
+}
