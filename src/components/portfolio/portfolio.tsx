@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   EMAIL,
   chapters,
@@ -12,7 +12,7 @@ import {
   type ProjectId,
 } from "./content";
 import { CommandMenu } from "./command-menu";
-import { SignalField } from "./signal-field";
+import { HeadlineField } from "./headline-field";
 import { ProjectVisual } from "./visuals";
 
 function useClock() {
@@ -41,7 +41,7 @@ export function Portfolio() {
   const [group, setGroup] = useState<(typeof stackGroups)[number]>("All");
   const [tech, setTech] = useState<(typeof stackItems)[number]["name"]>("TypeScript");
   const [copied, setCopied] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [delivery, setDelivery] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [progress, setProgress] = useState(0);
 
   const selected = stackItems.find((item) => item.name === tech) ?? stackItems[0];
@@ -74,6 +74,60 @@ export function Portfolio() {
       document.body.style.overflow = "";
     };
   }, [menuOpen]);
+
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (delivery === "sending") return;
+
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    if (String(data.get("company") ?? "").trim()) {
+      setDelivery("sent");
+      form.reset();
+      return;
+    }
+
+    const name = String(data.get("name") ?? "").trim();
+    const email = String(data.get("email") ?? "").trim();
+    const kind = String(data.get("kind") ?? "").trim();
+    const message = String(data.get("message") ?? "").trim();
+
+    const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY;
+    if (!accessKey) {
+      setDelivery("error");
+      return;
+    }
+
+    setDelivery("sending");
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: accessKey,
+          name,
+          email,
+          project: kind,
+          message,
+          subject: `Project — ${kind} — ${name}`,
+          from_name: "maxisy.pl",
+          botcheck: false,
+        }),
+      });
+      const payload = (await response.json()) as { success?: boolean };
+      if (!response.ok || payload.success !== true) {
+        setDelivery("error");
+        return;
+      }
+      setDelivery("sent");
+      form.reset();
+    } catch {
+      setDelivery("error");
+    }
+  }
 
   async function copyEmail() {
     try {
@@ -175,9 +229,10 @@ export function Portfolio() {
       ) : null}
 
       <main>
-        <section className="mx-auto max-w-6xl px-5 pt-12 pb-14 md:px-8 md:pt-20 md:pb-20">
-          <div className="grid items-end gap-10 lg:grid-cols-12 lg:gap-8">
-            <div className="lg:col-span-7">
+        <section className="relative overflow-hidden">
+          <HeadlineField />
+          <div className="relative mx-auto max-w-6xl px-5 pt-16 pb-20 md:px-8 md:pt-28 md:pb-32">
+            <div className="max-w-3xl">
               <p className="rise label flex items-center gap-3 text-muted">
                 <span className="live-dot inline-block size-1.5 rounded-full bg-signal" />
                 Open for select work
@@ -207,9 +262,6 @@ export function Portfolio() {
                   {copied ? "Email copied" : "maxisy@maxisy.pl"}
                 </button>
               </div>
-            </div>
-            <div className="rise lg:col-span-5" style={{ animationDelay: "180ms" }}>
-              <SignalField />
             </div>
           </div>
         </section>
@@ -417,20 +469,15 @@ export function Portfolio() {
               <p className="mt-5 max-w-xl text-base leading-relaxed text-pretty text-ink/70">
                 Websites, web apps, Solana tooling, Discord bots, scripts. Tell me the constraint and the deadline.
               </p>
-              <form
-                className="mt-10 grid gap-6 md:grid-cols-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const data = new FormData(event.currentTarget);
-                  const name = String(data.get("name") ?? "");
-                  const email = String(data.get("email") ?? "");
-                  const kind = String(data.get("kind") ?? "");
-                  const message = String(data.get("message") ?? "");
-                  const body = `Name: ${name}\nEmail: ${email}\nProject: ${kind}\n\n${message}`;
-                  window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(`Project — ${kind}`)}&body=${encodeURIComponent(body)}`;
-                  setSent(true);
-                }}
-              >
+              <form className="mt-10 grid gap-6 md:grid-cols-2" onSubmit={(event) => void sendMessage(event)}>
+                <input
+                  type="text"
+                  name="company"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  className="hidden"
+                />
                 <label className="block">
                   <span className="label text-ink/50">Name</span>
                   <input
@@ -479,17 +526,25 @@ export function Portfolio() {
                 <div className="flex flex-wrap items-center gap-4 md:col-span-2">
                   <button
                     type="submit"
-                    className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-150 ease-out active:scale-[0.96]"
+                    disabled={delivery === "sending"}
+                    className="inline-flex min-h-11 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-150 ease-out active:scale-[0.96] disabled:cursor-wait disabled:opacity-60"
                   >
-                    Write the email
+                    {delivery === "sending" ? "Sending" : "Send"}
                   </button>
                   <button type="button" onClick={() => void copyEmail()} className="min-h-11 text-sm text-ink underline decoration-ink/30 underline-offset-4">
                     {copied ? "Copied" : "Copy the address instead"}
                   </button>
                 </div>
-                {sent ? (
-                  <p className="text-sm text-ink/70 md:col-span-2">
-                    Your mail app should open a draft to {EMAIL}. If it doesn’t, that address is the whole path.
+                {delivery === "sent" ? (
+                  <p className="text-sm text-ink/70 md:col-span-2" role="status">
+                    Sent. I’ll reply from {EMAIL}.
+                  </p>
+                ) : null}
+                {delivery === "error" ? (
+                  <p className="text-sm text-ink/70 md:col-span-2" role="status">
+                    {import.meta.env.DEV && !import.meta.env.VITE_WEB3FORMS_ACCESS_KEY
+                      ? "Add VITE_WEB3FORMS_ACCESS_KEY to .env.local, then restart the dev server."
+                      : "That didn’t go through. Copy the address and write directly."}
                   </p>
                 ) : null}
               </form>

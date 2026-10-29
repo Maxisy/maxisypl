@@ -97,8 +97,8 @@
     grid-template-rows: 1fr;
   }
 
-  .field-frame {
-    height: 16.5rem;
+  .headline-field {
+    mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
   }
 
   .paper {
@@ -135,12 +135,6 @@
     letter-spacing: 0.16em;
     line-height: 1;
     text-transform: uppercase;
-  }
-}
-
-@media (min-width: 1024px) {
-  .field-frame {
-    height: 34rem;
   }
 }
 
